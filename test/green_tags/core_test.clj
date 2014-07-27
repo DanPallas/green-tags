@@ -38,9 +38,9 @@
                      :lyrics "the lyrics"
                      }]
              (-> (assoc {} :id3-fields fields)
-                 (assoc :id3-header {:bit-rate "128" :channels "Mono"
+                 (assoc :id3-header {:bit-rate 128 :channels "Mono"
                                      :encoding-type "mp3"
-                                     :format "MPEG1 Layer 3" 
+                                     :format "MPEG-1 Layer 3" 
                                      :sample-rate 44100 :length 0
                                      :variable-bit-rate false})
                  (assoc :aac-fields (-> (reduce dissoc fields fields-not-in-aac)
@@ -52,17 +52,64 @@
                                      :format "AAC" 
                                      :sample-rate 44100 :length 0
                                      :variable-bit-rate true})
-                 (assoc :vorbis-fields 
+                 (assoc :flac-fields 
                         (-> (reduce dissoc 
                                     fields 
                                     fields-not-in-vorbis)
                             (assoc :track "01"
-                                   :encoder "reference libFLAC 1.2.1 200170917")
+                                   :encoder "reference libFLAC 1.2.1 20070917")
                             ))
-                 (assoc :vorbis-header {:bit-rate 0 :channels "1"
+                 (assoc :ogg-fields 
+                        (-> (reduce dissoc 
+                                    fields 
+                                    fields-not-in-vorbis)
+                            (assoc :track "01"
+                                   :encoder "Xiph.Org libVorbis I 20120203 (Omnipresent)")))
+                 (assoc :flac-header {:bit-rate 0 :channels "1"
                                         :encoding-type "FLAC 16 bits"
-                                        :format "AAC" 
+                                        :format "FLAC 16 bits" 
                                         :sample-rate 44100 :length 0
-                                        :variable-bit-rate true}))))
+                                        :variable-bit-rate true})
+                 (assoc :ogg-header {:bit-rate 96 :channels "1"
+                                        :encoding-type "Ogg Vorbis v1"
+                                        :format "Ogg Vorbis v1" 
+                                        :sample-rate 44100 :length 0
+                                        :variable-bit-rate true})
+                 (assoc :paths {:mp3 "test/resources/tagged/song3.mp3"
+                                :m4a "test/resources/tagged/song3.m4a"
+                                :ogg "test/resources/tagged/song3.ogg"
+                                :flac "test/resources/tagged/song3.flac"}))))
 
-
+(facts 
+  "about get-all-info"
+  (fact "it can read information from java files"
+        (core/get-all-info (as-file (get-in song3 [:paths :mp3])))
+           => (conj (song3 :id3-fields) (song3 :id3-header))
+        (core/get-all-info (as-file (get-in song3 [:paths :flac])))
+           => (conj (song3 :flac-fields) (song3 :flac-header))
+        (core/get-all-info (as-file (get-in song3 [:paths :ogg])))
+           => (conj (song3 :ogg-fields) (song3 :ogg-header))
+        (core/get-all-info (as-file (get-in song3 [:paths :m4a])))
+           => (conj (song3 :aac-fields) (song3 :aac-header))))
+(facts
+  "about get-fields"
+  (fact "it can read information from java files"
+        (core/get-fields (as-file (get-in song3 [:paths :mp3])))
+          => (song3 :id3-fields)
+        (core/get-fields (as-file (get-in song3 [:paths :flac])))
+          => (song3 :flac-fields)
+        (core/get-fields (as-file (get-in song3 [:paths :ogg])))
+          => (song3 :ogg-fields)
+        (core/get-fields (as-file (get-in song3 [:paths :m4a])))
+          => (song3 :aac-fields)))
+(facts
+  "about get-header-info"
+  (fact "it can read information from java files"
+        (core/get-header-info (as-file (get-in song3 [:paths :mp3])))
+          => (song3 :id3-header)
+        (core/get-header-info (as-file (get-in song3 [:paths :flac])))
+          => (song3 :flac-header)
+        (core/get-header-info (as-file (get-in song3 [:paths :ogg])))
+          => (song3 :ogg-header)
+        (core/get-header-info (as-file (get-in song3 [:paths :m4a])))
+          => (song3 :aac-header)))
