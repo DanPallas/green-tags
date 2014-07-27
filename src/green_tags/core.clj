@@ -11,11 +11,10 @@
   "_"
   "-")))
 
-(def field-ids (reduce #(assoc %1 (enum-val->key %2) %2) 
-                    {} 
-                    (vec (FieldKey/values))))
-
-(def mp3 (as-file "test/resources/library/unorganized.mp3"))
+(def field-ids (dissoc (reduce #(assoc %1 (enum-val->key %2) %2) 
+                               {} 
+                               (vec (FieldKey/values)))
+                       :cover-art))
 
 (defn- get-audio-file
   [f]
@@ -38,7 +37,7 @@
                   (assoc m field v)
                   m))) 
             {} 
-            (keys fields-ids))))
+            (keys field-ids))))
 
 (defn get-header-info
   "get header info from file f"
@@ -60,7 +59,3 @@
   (let
     [f (get-audio-file f)]
     (conj (get-header-info f) (get-fields f))))
-
-(get-header-info mp3)
-
-(get-all-info mp3)
