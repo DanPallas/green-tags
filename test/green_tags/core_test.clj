@@ -90,6 +90,9 @@
         (core/get-all-info (as-file (get-in song3 [:paths :ogg])))
            => (conj (song3 :ogg-fields) (song3 :ogg-header))
         (core/get-all-info (as-file (get-in song3 [:paths :m4a])))
+           => (conj (song3 :aac-fields) (song3 :aac-header)))
+  (fact "it can read information when passed a path as a string"
+        (core/get-all-info (get-in song3 [:paths :m4a]))
            => (conj (song3 :aac-fields) (song3 :aac-header))))
 (facts
   "about get-fields"
@@ -101,6 +104,9 @@
         (core/get-fields (as-file (get-in song3 [:paths :ogg])))
           => (song3 :ogg-fields)
         (core/get-fields (as-file (get-in song3 [:paths :m4a])))
+          => (song3 :aac-fields))
+  (fact "it can read information when passed a path as a string"
+        (core/get-fields (get-in song3 [:paths :m4a]))
           => (song3 :aac-fields)))
 (facts
   "about get-header-info"
@@ -112,4 +118,7 @@
         (core/get-header-info (as-file (get-in song3 [:paths :ogg])))
           => (song3 :ogg-header)
         (core/get-header-info (as-file (get-in song3 [:paths :m4a])))
-          => (song3 :aac-header)))
+          => (song3 :aac-header))
+  (fact "it can read information when passed a path as a string"
+        (core/get-header-info (get-in song3 [:paths :m4a]))
+          => (song3 :aac-header) ))
