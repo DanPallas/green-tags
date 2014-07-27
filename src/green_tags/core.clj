@@ -2,7 +2,10 @@
   (:require [clojure.java.io :refer [as-file]]
             [clojure.string :as string])
   (:import [org.jaudiotagger.audio AudioFile AudioFileIO]
-          [org.jaudiotagger.tag Tag FieldKey]))
+          [org.jaudiotagger.tag Tag FieldKey]
+          [java.util.logging Logger Level]))
+
+(.setLevel (Logger/getLogger "org.jaudiotagger") Level/OFF)
 
 (defn- enum-val->key
   [enum-val]
