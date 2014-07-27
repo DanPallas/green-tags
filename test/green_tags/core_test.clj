@@ -4,10 +4,7 @@
             [clojure.data :as data]
             [green-tags.core :as core]
             [midje.sweet :refer :all]))
-(keys (core/get-fields (as-file "test/resources/tagged/song3.mp3")))
-(core/get-header-info (as-file "test/resources/tagged/song3.m4a"))
-(keys (core/get-fields (as-file "test/resources/tagged/song3.flac")))
-(core/get-header-info (as-file "test/resources/tagged/song3.ogg"))
+
 (def fields-not-in-aac [:original-artist :remixer :record-label])
 (def fields-dif-in-aac [:genre :encoder])
 (def fields-not-in-vorbis [:original-artist :track-total :record-label 
@@ -131,4 +128,5 @@
   (fact "it returns :no-file when the file doesn't exist"
         (core/get-header-info "ageaewafa")
           => nil))
-
+(facts "about add-new-tag"
+       (fact "it overwrites old tag and gets encoding info from header"))
