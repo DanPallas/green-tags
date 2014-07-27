@@ -21,12 +21,14 @@
 
 (defn- get-audio-file
   [f]
-  (AudioFileIO/read f))
+  (let [f (if (instance? java.io.File f) f (as-file f))]
+    (AudioFileIO/read f)))
 
 (defn- get-tag
   "get a Tag implementing object from an AudioFile f"
   [f]
-  (let [f (if (= (type f) java.io.File) (get-audio-file f) f)]
+  (let [f (if (instance? org.jaudiotagger.audio.AudioFile f)
+            f (get-audio-file f))]
    (.getTag f)))
 
 (defn get-fields
@@ -43,10 +45,10 @@
             (keys field-ids))))
 
 (defn get-header-info
-  "get header info from file f"
+  "get header info from path/file f"
   [f]
   (let
-    [f (if (= (type f) java.io.File) (get-audio-file f) f)
+    [f (if (instance? org.jaudiotagger.audio.AudioFile f) f (get-audio-file f))
      header (.getAudioHeader f)]
     {:bit-rate (.getBitRateAsNumber header)
      :channels (.getChannels header)
@@ -57,8 +59,8 @@
      :variable-bit-rate (.isVariableBitRate header)}))
 
 (defn get-all-info
-  "get all header info and fields from file f in one map"
+  "get all header info and fields from path/file f in one map"
   [f]
   (let
-    [f (get-audio-file f)]
+    [f (if (instance? org.jaudiotagger.audio.AudioFile f) f (get-audio-file f))]
     (conj (get-header-info f) (get-fields f))))
