@@ -93,7 +93,10 @@
            => (conj (song3 :aac-fields) (song3 :aac-header)))
   (fact "it can read information when passed a path as a string"
         (core/get-all-info (get-in song3 [:paths :m4a]))
-           => (conj (song3 :aac-fields) (song3 :aac-header))))
+           => (conj (song3 :aac-fields) (song3 :aac-header)))
+  (fact "it returns nil when the file doesn't exist"
+        (core/get-all-info "ageaewafa")
+          => nil))
 (facts
   "about get-fields"
   (fact "it can read information from java files"
@@ -107,7 +110,10 @@
           => (song3 :aac-fields))
   (fact "it can read information when passed a path as a string"
         (core/get-fields (get-in song3 [:paths :m4a]))
-          => (song3 :aac-fields)))
+          => (song3 :aac-fields))
+  (fact "it returns nil when the file doesn't exist"
+        (core/get-fields "ageaewafa")
+          => nil))
 (facts
   "about get-header-info"
   (fact "it can read information from java files"
@@ -121,4 +127,8 @@
           => (song3 :aac-header))
   (fact "it can read information when passed a path as a string"
         (core/get-header-info (get-in song3 [:paths :m4a]))
-          => (song3 :aac-header) ))
+          => (song3 :aac-header))
+  (fact "it returns :no-file when the file doesn't exist"
+        (core/get-header-info "ageaewafa")
+          => nil))
+
