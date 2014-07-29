@@ -1,9 +1,14 @@
 (ns green-tags.core-test
-  (:require [clojure.java.io :refer [as-file]]
+  (:require [clojure.java.io :refer [as-file copy delete-file]]
             [clojure.set :as sets]
             [clojure.data :as data]
             [green-tags.core :as core]
             [midje.sweet :refer :all]))
+
+(defmacro debug [label i]
+  `(let [o# ~i
+         _# (println (str "Debug " ~label ": " o#))]
+     o#))
 
 (def fields-not-in-aac [:original-artist :remixer :record-label])
 (def fields-dif-in-aac [:genre :encoder])
@@ -128,5 +133,35 @@
   (fact "it returns :no-file when the file doesn't exist"
         (core/get-header-info "ageaewafa")
           => nil))
-(facts "about add-new-tag"
-       (fact "it overwrites old tag and gets encoding info from header"))
+
+(def test-files {:tags {:a {:title "test-title" :artist "artist"}}
+                  :paths {:1 "test/resources/tagged/unorganized.mp3"
+                          :2 "test/resources/tagged/unorganized2.mp3"}})
+
+(defn- clear-scratch
+  []
+  (doall (map delete-file 
+              (vec (.listFiles (as-file "test/resources/scratch"))))))
+(defn- get-scratch-path
+  [path]
+  (str "test/resources/scratch/" 
+       (.getName (as-file (get-in test-files [:paths path])))))
+(defn- copy-to-scratch
+[path]
+  (let [f (as-file (get-in test-files [:paths path]))]
+   (copy f (as-file (get-scratch-path path)))))
+
+(facts 
+  "about add-new-tag!"
+  (against-background 
+    [#_(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :1))]
+    (fact "it overwrites old tag, clearing all fields and returns true"
+          (core/add-new-tag! (get-scratch-path :1)
+                             (get-in test-files [:tags :a]))
+            => true
+          (core/get-fields (get-scratch-path :1))
+            => (get-in test-files [:tags :a]))
+    (fact "it returns false if file doesn't exist"
+          (core/add-new-tag! "bad/path" {:title ""})
+            => (contains ""))))

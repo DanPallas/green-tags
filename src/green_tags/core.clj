@@ -5,6 +5,11 @@
           [org.jaudiotagger.tag Tag FieldKey]
           [java.util.logging Logger Level]))
 
+(defmacro debug [label i]
+  `(let [o# ~i
+         _# (println (str "Debug " ~label ": " o#))]
+     o#))
+
 (.setLevel (Logger/getLogger "org.jaudiotagger") Level/OFF)
 
 (defn- enum-val->key
@@ -20,6 +25,8 @@
                        :cover-art))
 
 (defn- get-audio-file
+  "returns an audiofile from a path (file/string). Returns nil if file doesn't
+  exist"
   [f]
   (let [f (if (instance? java.io.File f) f (as-file f))]
     (if (not (.exists f)) nil (AudioFileIO/read f))))
@@ -69,3 +76,19 @@
   (let
     [f (if (instance? org.jaudiotagger.audio.AudioFile f) f (get-audio-file f))]
     (if (nil? f) nil (conj (get-header-info f) (get-fields f)))))
+
+(defn add-new-tag!
+  "Takes a path (file/string), removes the old tag from the file and writes a 
+  new tag with the values from the map. Returns true on succes, otherwise
+  returns an error string."
+  [path tag]
+  (let [f (get-audio-file path)]
+    (try
+      (let [t (.createDefaultTag f)]
+        (do (doall (map (fn [[k v]] (.setField t (field-ids k) v)) (vec tag)))
+            (AudioFileIO/delete f)
+            (.setTag f t)
+            (.commit f))
+            true)
+      (catch Exception e
+        (.toString e))))) 
