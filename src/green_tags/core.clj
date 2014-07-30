@@ -77,18 +77,35 @@
     [f (if (instance? org.jaudiotagger.audio.AudioFile f) f (get-audio-file f))]
     (if (nil? f) nil (conj (get-header-info f) (get-fields f)))))
 
+(defn- set-fields
+  "sets all fields in tag to the values in tag-map"
+  [tag tag-map]
+  (doall (map (fn [[k v]] (.addField tag (field-ids k) v)) (vec tag-map)))
+  tag)
+
+(defn- get-blank-tag!
+  "Returns a blank tag of the appropriate type for AudioFile f. If called on 
+  an mp3 file, the tag on the file is deleted."
+  [f path]
+  (let [t (.getTagOrCreateDefault f)] 
+    (AudioFileIO/delete f)
+    (if (or (instance? org.jaudiotagger.tag.flac.FlacTag t) 
+            (instance? org.jaudiotagger.tag.vorbiscomment.VorbisCommentTag t))
+        (set-fields (.getTag (get-audio-file path)) {:encoder ""}) 
+        (.createDefaultTag f)))) 
+
 (defn add-new-tag!
   "Takes a path (file/string), removes the old tag from the file and writes a 
   new tag with the values from the map. Returns true on succes, otherwise
   returns an error string."
-  [path tag]
+  [path tag-map]
   (let [f (get-audio-file path)]
-    (try
-      (let [t (.createDefaultTag f)]
-        (do (doall (map (fn [[k v]] (.setField t (field-ids k) v)) (vec tag)))
-            (AudioFileIO/delete f)
-            (.setTag f t)
-            (.commit f))
-            true)
+    (try 
+      (let [tag (get-blank-tag! f path)]
+        (set-fields tag tag-map)
+        (AudioFileIO/delete f)
+        (.setTag f tag)
+        (.commit f)
+        true)
       (catch Exception e
         (.toString e))))) 

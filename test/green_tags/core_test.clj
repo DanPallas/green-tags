@@ -134,9 +134,12 @@
         (core/get-header-info "ageaewafa")
           => nil))
 
-(def test-files {:tags {:a {:title "test-title" :artist "artist"}}
+(def test-files {:tags {:a {:artist "artist" :title "song3"}}
                   :paths {:1 "test/resources/tagged/unorganized.mp3"
-                          :2 "test/resources/tagged/unorganized2.mp3"}})
+                          :2 "test/resources/tagged/unorganized2.mp3"
+                          :3 "test/resources/tagged/song3.flac"
+                          :4 "test/resources/tagged/song3.m4a"
+                          :5 "test/resources/tagged/song3.ogg"}})
 
 (defn- clear-scratch
   []
@@ -154,9 +157,9 @@
 (facts 
   "about add-new-tag!"
   (against-background 
-    [#_(after :facts (clear-scratch))
+    [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :1))]
-    (fact "it overwrites old tag, clearing all fields and returns true"
+    (fact "it overwrites old tag, clearing all fields and returns true (mp3)"
           (core/add-new-tag! (get-scratch-path :1)
                              (get-in test-files [:tags :a]))
             => true
@@ -164,4 +167,29 @@
             => (get-in test-files [:tags :a]))
     (fact "it returns false if file doesn't exist"
           (core/add-new-tag! "bad/path" {:title ""})
-            => (contains ""))))
+            => (contains ""))
+    (fact "it updates the genre tag correctly on mp3 files"
+          (core/add-new-tag! (get-scratch-path :1) {:genre "Rock"})
+            => true
+          (core/get-fields (get-scratch-path :1))
+            => {:genre "Rock"}))
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :3))]
+    (fact "it overwrites and copies in ALL fields"
+          (core/add-new-tag! (get-scratch-path :3)
+                             (song3 :flac-fields))
+            => true
+          (core/get-fields (get-scratch-path :3))
+            => (song3 :flac-fields))
+    (fact "it overwrites old tag, clearing all fields and returns true (flac)"
+          (core/add-new-tag! (get-scratch-path :3)
+                             (get-in test-files [:tags :a]))
+            => true
+          (core/get-fields (get-scratch-path :3))
+            => (get-in test-files [:tags :a]))
+    (fact "it updates the genre tag correctly on flac files"
+          (core/add-new-tag! (get-scratch-path :3) {:genre "Rock"})
+            => true
+          (core/get-fields (get-scratch-path :3))
+            => {:genre "Rock"})))
