@@ -176,7 +176,7 @@
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :3))]
-    (fact "it overwrites and copies in ALL fields"
+    (fact "it overwrites and copies in ALL fields (flac)"
           (core/add-new-tag! (get-scratch-path :3)
                              (song3 :flac-fields))
             => true
@@ -192,4 +192,25 @@
           (core/add-new-tag! (get-scratch-path :3) {:genre "Rock"})
             => true
           (core/get-fields (get-scratch-path :3))
+            => {:genre "Rock"}))
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :4))]
+    (fact "it overwrites and copies in ALL fields (m4a)"
+          (core/add-new-tag! (get-scratch-path :4)
+                             (song3 :aac-fields))
+            => true
+          (core/get-fields (get-scratch-path :4))
+            => (song3 :aac-fields))
+    (fact "it overwrites old tag, clearing all fields and returns true (m4a)"
+          (core/add-new-tag! (get-scratch-path :4)
+                             (get-in test-files [:tags :a]))
+            => true
+          (core/get-fields (get-scratch-path :4))
+            => (get-in test-files [:tags :a]))
+    (fact "it updates the genre tag correctly on files (m4a)"
+          (core/add-new-tag! (get-scratch-path :4) {:genre "Rock"})
+            => true
+          (core/get-fields (get-scratch-path :4))
             => {:genre "Rock"})))
+(core/get-fields (get-in test-files [:paths :4]))

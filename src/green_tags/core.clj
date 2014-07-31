@@ -80,7 +80,7 @@
 (defn- set-fields
   "sets all fields in tag to the values in tag-map"
   [tag tag-map]
-  (doall (map (fn [[k v]] (.addField tag (field-ids k) v)) (vec tag-map)))
+  (doall (map (fn [[k v]] (.setField tag (field-ids k) v)) (vec tag-map)))
   tag)
 
 (defn- get-blank-tag!
@@ -92,7 +92,9 @@
     (if (or (instance? org.jaudiotagger.tag.flac.FlacTag t) 
             (instance? org.jaudiotagger.tag.vorbiscomment.VorbisCommentTag t))
         (set-fields (.getTag (get-audio-file path)) {:encoder ""}) 
-        (.createDefaultTag f)))) 
+        (if (instance? org.jaudiotagger.tag.mp4.Mp4Tag t)
+            (.getTag (get-audio-file path))
+            (.createDefaultTag f))))) 
 
 (defn add-new-tag!
   "Takes a path (file/string), removes the old tag from the file and writes a 
