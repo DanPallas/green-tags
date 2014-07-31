@@ -165,6 +165,12 @@
             => true
           (core/get-fields (get-scratch-path :1))
             => (get-in test-files [:tags :a]))
+    (fact "it overwrites and copies in ALL fields (mp3)"
+          (core/add-new-tag! (get-scratch-path :1)
+                             (song3 :id3-fields))
+            => true
+          (core/get-fields (get-scratch-path :1))
+            => (song3 :id3-fields))
     (fact "it returns false if file doesn't exist"
           (core/add-new-tag! "bad/path" {:title ""})
             => (contains ""))
@@ -212,5 +218,24 @@
           (core/add-new-tag! (get-scratch-path :4) {:genre "Rock"})
             => true
           (core/get-fields (get-scratch-path :4))
+            => {:genre "Rock"}))
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :5))]
+    (fact "it overwrites and copies in ALL fields (ogg)"
+          (core/add-new-tag! (get-scratch-path :5)
+                             (song3 :ogg-fields))
+            => true
+          (core/get-fields (get-scratch-path :5))
+            => (song3 :ogg-fields))
+    (fact "it overwrites old tag, clearing all fields and returns true (ogg)"
+          (core/add-new-tag! (get-scratch-path :5)
+                             (get-in test-files [:tags :a]))
+            => true
+          (core/get-fields (get-scratch-path :5))
+            => (get-in test-files [:tags :a]))
+    (fact "it updates the genre tag correctly on files (ogg)"
+          (core/add-new-tag! (get-scratch-path :5) {:genre "Rock"})
+            => true
+          (core/get-fields (get-scratch-path :5))
             => {:genre "Rock"})))
-(core/get-fields (get-in test-files [:paths :4]))
