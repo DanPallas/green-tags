@@ -5,7 +5,7 @@
           [org.jaudiotagger.tag Tag FieldKey]
           [java.util.logging Logger Level]))
 
-(defmacro debug [label i]
+(defmacro ^:private debug [label i]
   `(let [o# ~i
          _# (println (str "Debug " ~label ": " o#))]
      o#))
