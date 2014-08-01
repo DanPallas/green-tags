@@ -1,4 +1,12 @@
 (ns green-tags.core
+  "Supported tags 
+    mp3: track, track-total, disc-no, disc-total, title,
+      artist, album, album-artist, year, genre, comment, composer, 
+      original-artist, remixer, conductor, bpm, grouping, isrc, record-label, 
+      encoder, lyricist, lyrics
+    aac: all from mp3 except original-artist, remixer, record-label
+    ogg/flac: all except original-artist, track-total, record-label, disc-total,
+      remixer, grouping"
   (:require [clojure.java.io :refer [as-file]]
             [clojure.string :as string])
   (:import [org.jaudiotagger.audio AudioFile AudioFileIO]
@@ -19,7 +27,7 @@
   "_"
   "-")))
 
-(def field-ids (dissoc (reduce #(assoc %1 (enum-val->key %2) %2) 
+(def ^:private field-ids (dissoc (reduce #(assoc %1 (enum-val->key %2) %2) 
                                {} 
                                (vec (FieldKey/values)))
                        :cover-art))
@@ -40,9 +48,10 @@
     (if (nil? f) nil (.getTag f))))
 
 (defn get-fields
-  [f] 
+  "returns a tag-map from audio file tag fields"
+  [path] 
   (let
-    [tags (get-tag f)] 
+    [tags (get-tag path)] 
     (if (nil? tags) 
       nil
       (reduce (fn [m field] 
@@ -55,10 +64,11 @@
             (keys field-ids)))))
 
 (defn get-header-info
-  "get header info from path/file f"
-  [f]
+  "get header info from path"
+  [path]
   (let
-    [f (if (instance? org.jaudiotagger.audio.AudioFile f) f (get-audio-file f))
+    [f (if (instance? org.jaudiotagger.audio.AudioFile path)
+         path (get-audio-file path))
      header (if (nil? f) nil (.getAudioHeader f))]
     (if (nil? header)
      nil
@@ -71,10 +81,11 @@
      :variable-bit-rate (.isVariableBitRate header)})))
 
 (defn get-all-info
-  "get all header info and fields from path/file f in one map"
-  [f]
+  "get all header info and fields from path in one map"
+  [path]
   (let
-    [f (if (instance? org.jaudiotagger.audio.AudioFile f) f (get-audio-file f))]
+    [f (if (instance? org.jaudiotagger.audio.AudioFile path)
+         path (get-audio-file path))]
     (if (nil? f) nil (conj (get-header-info f) (get-fields f)))))
 
 (defn- set-fields
