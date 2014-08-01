@@ -171,7 +171,7 @@
             => true
           (core/get-fields (get-scratch-path :1))
             => (song3 :id3-fields))
-    (fact "it returns false if file doesn't exist"
+    (fact "it returns an error string if file doesn't exist"
           (core/add-new-tag! "bad/path" {:title ""})
             => (contains ""))
     (fact "it updates the genre tag correctly on mp3 files"
@@ -239,3 +239,111 @@
             => true
           (core/get-fields (get-scratch-path :5))
             => {:genre "Rock"})))
+(facts 
+  "about update-tag!"
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :1))]
+    (fact "it updates a single value to the existing tag and returns true (mp3)"
+          (core/update-tag! (get-scratch-path :1)
+                             {:title "updated-title"})
+          => true
+          (core/get-fields (get-scratch-path :1))
+          => (merge (core/get-fields (get-in test-files [:paths :1])) 
+                    {:title "updated-title"}))
+    (fact "it updates multiple values to the existing tag and returns true (mp3)"
+          (core/update-tag! (get-scratch-path :1)
+                             {:title "updated-title" :artist "updated-artist"})
+          => true
+          (core/get-fields (get-scratch-path :1))
+          => (merge (core/get-fields (get-in test-files [:paths :1])) 
+                    {:title "updated-title" :artist "updated-artist"}))
+    (fact "it returns an error string if file doesn't exist (mp3)"
+          (core/update-tag! "bad/path" {:title ""})
+          => (contains ""))
+    (fact "it updates the genre tag correctly on mp3 files"
+          (core/update-tag! (get-scratch-path :1) {:genre "Rock"})
+          => true
+          (core/get-fields (get-scratch-path :1))
+          => (merge (core/get-fields (get-in test-files [:paths :1])) 
+                    {:genre "Rock"})))
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :3))]
+    (fact "it updates a single value to the existing tag and returns true (flac)"
+          (core/update-tag! (get-scratch-path :3)
+                             {:title "updated-title"})
+          => true
+          (core/get-fields (get-scratch-path :3))
+          => (merge (core/get-fields (get-in test-files [:paths :3])) 
+                    {:title "updated-title"}))
+    (fact "it updates multiple values to the existing tag and returns true (flac)"
+          (core/update-tag! (get-scratch-path :3)
+                             {:title "updated-title" :artist "updated-artist"})
+          => true
+          (core/get-fields (get-scratch-path :3))
+          => (merge (core/get-fields (get-in test-files [:paths :3])) 
+                    {:title "updated-title" :artist "updated-artist"}))
+    (fact "it returns an error string if file doesn't exist (flac)"
+          (core/update-tag! "bad/path" {:title ""})
+          => (contains ""))
+    (fact "it updates the genre tag correctly on mp3 files"
+          (core/update-tag! (get-scratch-path :3) {:genre "Rock"})
+          => true
+          (core/get-fields (get-scratch-path :3))
+          => (merge (core/get-fields (get-in test-files [:paths :3])) 
+                    {:genre "Rock"})))
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :4))]
+    (fact "it updates a single value to the existing tag and returns true (m4a)"
+          (core/update-tag! (get-scratch-path :4)
+                             {:title "updated-title"})
+          => true
+          (core/get-fields (get-scratch-path :4))
+          => (merge (core/get-fields (get-in test-files [:paths :4])) 
+                    {:title "updated-title"}))
+    (fact "it updates multiple values to the existing tag and returns true (m4a)"
+          (core/update-tag! (get-scratch-path :4)
+                             {:title "updated-title" :artist "updated-artist"})
+          => true
+          (core/get-fields (get-scratch-path :4))
+          => (merge (core/get-fields (get-in test-files [:paths :4])) 
+                    {:title "updated-title" :artist "updated-artist"}))
+    (fact "it returns an error string if file doesn't exist (m4a)"
+          (core/update-tag! "bad/path" {:title ""})
+          => (contains ""))
+    (fact "it updates the genre tag correctly on mp3 files"
+          (core/update-tag! (get-scratch-path :4) {:genre "Rock"})
+          => true
+          (core/get-fields (get-scratch-path :4))
+          => (merge (core/get-fields (get-in test-files [:paths :4])) 
+                    {:genre "Rock"})))
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :5))]
+    (fact "it updates a single value to the existing tag and returns true (ogg)"
+          (core/update-tag! (get-scratch-path :5)
+                            {:title "updated-title"})
+          => true
+          (core/get-fields (get-scratch-path :5))
+          => (merge (core/get-fields (get-in test-files [:paths :5])) 
+                    {:title "updated-title"}))
+    (fact "it updates multiple values to the existing tag and returns true (ogg)"
+          (core/update-tag! (get-scratch-path :5)
+                            {:title "updated-title" :artist "updated-artist"})
+          => true
+          (core/get-fields (get-scratch-path :5))
+          => (merge (core/get-fields (get-in test-files [:paths :5])) 
+                    {:title "updated-title" :artist "updated-artist"}))
+    (fact "it returns an error string if file doesn't exist (ogg)"
+          (core/update-tag! "bad/path" {:title ""})
+          => (contains ""))
+    (fact "it updates the genre tag correctly on mp3 files"
+          (core/update-tag! (get-scratch-path :5) {:genre "Rock"})
+          => true
+          (core/get-fields (get-scratch-path :5))
+          => (merge (core/get-fields (get-in test-files [:paths :5])) 
+                    {:genre "Rock"})))
+)
+

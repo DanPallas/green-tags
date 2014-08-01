@@ -98,7 +98,7 @@
 
 (defn add-new-tag!
   "Takes a path (file/string), removes the old tag from the file and writes a 
-  new tag with the values from the map. Returns true on succes, otherwise
+  new tag with the values from the map. Returns true on success, otherwise
   returns an error string."
   [path tag-map]
   (let [f (get-audio-file path)]
@@ -111,3 +111,17 @@
         true)
       (catch Exception e
         (.toString e))))) 
+
+(defn update-tag!
+  "Takes a path (file/string), and a tag-map. Updates/adds fields from tag-map
+  to the existing tag on the file"
+  [path tag-map]
+  (let [f (get-audio-file path)]
+    (try 
+      (let [ t (.getTagOrCreateDefault f)]
+        (set-fields t tag-map)
+        (.setTag f t)
+        (.commit f)
+        true)
+      (catch Exception e
+        (.toString e)))))
