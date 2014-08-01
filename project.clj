@@ -1,4 +1,4 @@
-(defproject green-tags "0.1.0-alpha"
+(defproject green-tags "0.2.0-alpha"
   :description "An audio tagging library supporing mp3 mp4 flac and ogg. It is intended to be useable with the with little boiler plate code."
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"

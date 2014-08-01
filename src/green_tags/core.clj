@@ -1,5 +1,5 @@
 (ns green-tags.core
-  "Supported tags 
+  "Supported tags: 
     mp3: track, track-total, disc-no, disc-total, title,
       artist, album, album-artist, year, genre, comment, composer, 
       original-artist, remixer, conductor, bpm, grouping, isrc, record-label, 
