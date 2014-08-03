@@ -8,7 +8,8 @@
     ogg/flac: all except original-artist, track-total, record-label, disc-total,
       remixer, grouping"
   (:require [clojure.java.io :refer [as-file]]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [clojure.set :refer [difference]])
   (:import [org.jaudiotagger.audio AudioFile AudioFileIO]
           [org.jaudiotagger.tag Tag FieldKey]
           [java.util.logging Logger Level]))
@@ -31,6 +32,35 @@
                                {} 
                                (vec (FieldKey/values)))
                        :cover-art))
+(def ^{:doc "fields supported in mp3"} 
+  mp3-fields #{:track :track-total :disc-no :disc-total :title :artist :album 
+               :album-artist :year :genre :comment :composer :original-artist 
+               :remixer :conductor :bpm :grouping :isrc :record-label :encoder 
+               :lyricist :lyrics})
+(def ^{:doc "fields supported in mp4"} 
+  mp4-fields #{:track :track-total :disc-no :disc-total :title :artist :album 
+               :album-artist :year :genre :comment :composer :conductor :bpm 
+               :grouping :isrc :encoder :lyricist :lyrics})
+(def ^{:doc "fields supported in flac/mp3"} 
+  vorbis-fields #{:track :disc-no :title :artist :album :album-artist :year 
+                 :genre :comment :composer :conductor :bpm :isrc :encoder 
+                 :lyricist :lyrics})
+(defn- get-field-set
+  "returns set of supported field keys"
+  [tag]
+  (cond
+    (or (instance? org.jaudiotagger.tag.flac.FlacTag tag) 
+        (instance? org.jaudiotagger.tag.vorbiscomment.VorbisCommentTag tag)) 
+    vorbis-fields
+    (instance? org.jaudiotagger.tag.mp4.Mp4Tag tag) 
+    mp4-fields
+    :else mp3-fields))
+
+(defn- sanitize-tag-map
+  "return tag-map with only the fields supported by that tag type"
+  [tag tag-map]
+  (apply (partial dissoc tag-map) (difference (set (keys tag-map)) 
+                                              (get-field-set tag))))
 
 (defn- get-audio-file
   "returns an audiofile from a path (file/string). Returns nil if file doesn't
@@ -51,17 +81,19 @@
   "returns a tag-map from audio file tag fields"
   [path] 
   (let
-    [tags (get-tag path)] 
-    (if (nil? tags) 
+    [tag (get-tag path)] 
+    (if (nil? tag) 
       nil
-      (reduce (fn [m field] 
+      (-> (reduce (fn [m field] 
               (let 
-                [v  (.getFirst tags (field-ids field))]
+                [v  (.getFirst tag (field-ids field))]
                 (if-not (= v "") 
                   (assoc m field v)
                   m))) 
             {} 
-            (keys field-ids)))))
+            (keys field-ids))
+          (merge (when-let [art (.getFirstArtwork tag)]
+                   {:artwork (.getMimeType art)}))))))
 
 (defn get-header-info
   "get header info from path"
@@ -91,7 +123,8 @@
 (defn- set-fields
   "sets all fields in tag to the values in tag-map"
   [tag tag-map]
-  (doall (map (fn [[k v]] (.setField tag (field-ids k) v)) (vec tag-map)))
+  (doall (map (fn [[k v]] (.setField tag (field-ids k) v)) 
+              (vec (sanitize-tag-map tag tag-map))))
   tag)
 
 (defn- get-blank-tag!
@@ -110,7 +143,7 @@
 (defn add-new-tag!
   "Takes a path (file/string), removes the old tag from the file and writes a 
   new tag with the values from the map. Returns true on success, otherwise
-  returns an error string."
+  returns an error string. It ignores unsupported fields in the tag-map."
   [path tag-map]
   (let [f (get-audio-file path)]
     (try 
@@ -125,7 +158,8 @@
 
 (defn update-tag!
   "Takes a path (file/string), and a tag-map. Updates/adds fields from tag-map
-  to the existing tag on the file"
+  to the existing tag on the file. It ignores unsupported fields in the 
+  tag-map."
   [path tag-map]
   (let [f (get-audio-file path)]
     (try 
@@ -136,3 +170,7 @@
         true)
       (catch Exception e
         (.toString e)))))
+
+#_(.getMimeType (.getFirstArtwork (get-tag (get-audio-file "test/resources/tagged/song3-no-art.mp3"))))
+#_(add-new-tag! "test/resources/tagged/song3-no-art.mp3" {:title "test"})
+#_(merge {:d "d"} nil)

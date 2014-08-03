@@ -38,6 +38,7 @@
                      :encoder "someone"
                      :lyricist "writer"
                      :lyrics "the lyrics"
+                     :artwork "image/png"
                      }]
              (-> (assoc {} :id3-fields fields)
                  (assoc :id3-header {:bit-rate 128 :channels "Mono"
@@ -165,12 +166,18 @@
             => true
           (core/get-fields (get-scratch-path :1))
             => (get-in test-files [:tags :a]))
-    (fact "it overwrites and copies in ALL fields (mp3)"
+    (fact "it ignores unsupported fields and writes the supported fields"
           (core/add-new-tag! (get-scratch-path :1)
-                             (song3 :id3-fields))
+                             (assoc (get-in test-files [:tags :a]) :bad-field 1))
             => true
           (core/get-fields (get-scratch-path :1))
-            => (song3 :id3-fields))
+            => (get-in test-files [:tags :a]) )
+    (fact "it overwrites and copies in ALL fields (mp3)"
+          (core/add-new-tag! (get-scratch-path :1)
+                             (dissoc (song3 :id3-fields) :artwork))
+            => true
+          (core/get-fields (get-scratch-path :1))
+            => (dissoc (song3 :id3-fields) :artwork))
     (fact "it returns an error string if file doesn't exist"
           (core/add-new-tag! "bad/path" {:title ""})
             => (contains ""))
@@ -187,7 +194,7 @@
                              (song3 :flac-fields))
             => true
           (core/get-fields (get-scratch-path :3))
-            => (song3 :flac-fields))
+            => (dissoc (song3 :flac-fields) :artwork))
     (fact "it overwrites old tag, clearing all fields and returns true (flac)"
           (core/add-new-tag! (get-scratch-path :3)
                              (get-in test-files [:tags :a]))
@@ -207,7 +214,7 @@
                              (song3 :aac-fields))
             => true
           (core/get-fields (get-scratch-path :4))
-            => (song3 :aac-fields))
+            => (dissoc (song3 :aac-fields) :artwork))
     (fact "it overwrites old tag, clearing all fields and returns true (m4a)"
           (core/add-new-tag! (get-scratch-path :4)
                              (get-in test-files [:tags :a]))
@@ -227,7 +234,7 @@
                              (song3 :ogg-fields))
             => true
           (core/get-fields (get-scratch-path :5))
-            => (song3 :ogg-fields))
+            => (dissoc (song3 :ogg-fields) :artwork))
     (fact "it overwrites old tag, clearing all fields and returns true (ogg)"
           (core/add-new-tag! (get-scratch-path :5)
                              (get-in test-files [:tags :a]))
@@ -254,6 +261,14 @@
     (fact "it updates multiple values to the existing tag and returns true (mp3)"
           (core/update-tag! (get-scratch-path :1)
                              {:title "updated-title" :artist "updated-artist"})
+          => true
+          (core/get-fields (get-scratch-path :1))
+          => (merge (core/get-fields (get-in test-files [:paths :1])) 
+                    {:title "updated-title" :artist "updated-artist"}))
+    (fact "it ignores unsupported fields and writes supported fields"
+          (core/update-tag! (get-scratch-path :1)
+                             {:title "updated-title" :artist "updated-artist"
+                              :bad-field 1})
           => true
           (core/get-fields (get-scratch-path :1))
           => (merge (core/get-fields (get-in test-files [:paths :1])) 
@@ -344,6 +359,5 @@
           => true
           (core/get-fields (get-scratch-path :5))
           => (merge (core/get-fields (get-in test-files [:paths :5])) 
-                    {:genre "Rock"})))
-)
+                    {:genre "Rock"}))))
 
