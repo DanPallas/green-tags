@@ -1,14 +1,19 @@
 (ns green-tags.core-test
-  (:require [clojure.java.io :refer [as-file copy delete-file]]
+  (:require [clojure.java.io :refer [as-file copy delete-file input-stream]]
             [clojure.set :as sets]
             [clojure.data :as data]
             [green-tags.core :as core]
-            [midje.sweet :refer :all]))
+            [midje.sweet :refer :all])
+  (:import [org.apache.commons.io IOUtils]))
 
 (defmacro debug [label i]
   `(let [o# ~i
          _# (println (str "Debug " ~label ": " o#))]
      o#))
+
+(defn get-byte-array
+  [path]
+  (IOUtils/toByteArray (input-stream path)))
 
 (def fields-not-in-aac [:original-artist :remixer :record-label])
 (def fields-dif-in-aac [:genre :encoder])
@@ -140,7 +145,10 @@
                           :2 "test/resources/tagged/unorganized2.mp3"
                           :3 "test/resources/tagged/song3.flac"
                           :4 "test/resources/tagged/song3.m4a"
-                          :5 "test/resources/tagged/song3.ogg"}})
+                          :5 "test/resources/tagged/song3.ogg"
+                          :6 "test/resources/tagged/song3.mp3"
+                          :7  "test/resources/tagged/song3-no-art.mp3"}
+                  :images {:1 "test/resources/images/music_icon.png"}})
 
 (defn- clear-scratch
   []
@@ -360,4 +368,74 @@
           (core/get-fields (get-scratch-path :5))
           => (merge (core/get-fields (get-in test-files [:paths :5])) 
                     {:genre "Rock"}))))
-
+(facts
+  "about get-image"
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :6))]
+    (fact "it reads an image into a map containing correct mimetype and
+         a byte array (mp3)"
+          (let [m (core/get-image (get-scratch-path :6))]
+            (do 
+              (type m) => (type {})
+              (:mimetype m) 
+              => "image/png"
+              (seq (:data m))
+              =>(seq (get-byte-array (get-in test-files [:images :1])))))))
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :5))]
+    (fact "it reads an image into a map containing correct mimetype and
+         a byte array (ogg)"
+          (let [m (core/get-image (get-scratch-path :5))]
+            (do 
+              (type m) => (type {})
+              (:mimetype m) 
+              => "image/png"
+              (seq (:data m))
+              =>(seq (get-byte-array (get-in test-files [:images :1])))))))
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :4))]
+    (fact "it reads an image into a map containing correct mimetype and
+         a byte array (m4a)"
+          (let [m (core/get-image (get-scratch-path :4))]
+            (do 
+              (type m) => (type {})
+              (:mimetype m) 
+              => "image/png"
+              (seq (:data m))
+              =>(seq (get-byte-array (get-in test-files [:images :1])))))))
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :3))]
+    (fact "it reads an image into a map containing correct mimetype and
+         a byte array (flac)"
+          (let [m (core/get-image (get-scratch-path :3))]
+            (do 
+              (type m) => (type {})
+              (:mimetype m) 
+              => "image/png"
+              (seq (:data m))
+              =>(seq (get-byte-array (get-in test-files [:images :1])))))))
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :3))]
+    (fact "it reads an image into a map containing correct mimetype and
+         a byte array when given a java file (flac)"
+          (let [m (core/get-image (as-file (get-scratch-path :3)))]
+            (do 
+              (type m) => (type {})
+              (:mimetype m) 
+              => "image/png"
+              (seq (:data m))
+              =>(seq (get-byte-array (get-in test-files [:images :1])))))))
+  (against-background 
+    [(after :facts (clear-scratch))
+     (before :facts (copy-to-scratch :7))]
+    (fact "returns nil if the file doesn't have artwork"
+          (core/get-image (as-file (get-scratch-path :7)))
+          => nil))
+  (fact "it returns nil when the file doesn't exist"
+        (core/get-image "bad path")
+        => nil))

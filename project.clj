@@ -5,5 +5,6 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org/jaudiotagger "2.0.3"]]
-  :profiles {:dev {:dependencies [[midje "1.6.3"]]}}
+  :profiles {:dev {:dependencies [[midje "1.6.3"]
+                                  [commons-io/commons-io "2.4"]]}}
   :plugins [[codox "0.8.10"]])

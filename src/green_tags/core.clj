@@ -12,6 +12,7 @@
             [clojure.set :refer [difference]])
   (:import [org.jaudiotagger.audio AudioFile AudioFileIO]
           [org.jaudiotagger.tag Tag FieldKey]
+          [org.jaudiotagger.tag.datatype Artwork]
           [java.util.logging Logger Level]))
 
 (defmacro ^:private debug [label i]
@@ -174,3 +175,13 @@
 #_(.getMimeType (.getFirstArtwork (get-tag (get-audio-file "test/resources/tagged/song3-no-art.mp3"))))
 #_(add-new-tag! "test/resources/tagged/song3-no-art.mp3" {:title "test"})
 #_(merge {:d "d"} nil)
+
+(defn get-image
+  "Returns the first artwork field of file path. Returns as a map with two 
+  entries data (byte array) and mimetype (string). Returns nil if path is bad
+  or if the file doesn't have any artwork."
+  [path]
+  (when-let [tag (get-tag path)]
+    (when-let [art (.getFirstArtwork tag)]
+      {:mimetype (.getMimeType art)
+       :data (.getBinaryData art)})))
