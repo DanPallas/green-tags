@@ -78,23 +78,32 @@
             (get-audio-file f))]
     (if (nil? f) nil (.getTag f))))
 
+(defn- get-image
+  "Returns the first artwork field of file path. Returns as a map with two 
+  entries data (byte array) and mimetype (string). Returns nil if path is bad
+  or if the file doesn't have any artwork."
+  [tag]
+  (when-let [art (.getFirstArtwork tag)]
+      {:artwork-mime (.getMimeType art)
+       :artwork-data (.getBinaryData art)}))
+
+(defn- get-tag-fields
+  [tag]
+  )
 (defn get-fields
   "returns a tag-map from audio file tag fields"
   [path] 
-  (let
-    [tag (get-tag path)] 
-    (if (nil? tag) 
-      nil
-      (-> (reduce (fn [m field] 
-              (let 
-                [v  (.getFirst tag (field-ids field))]
-                (if-not (= v "") 
-                  (assoc m field v)
-                  m))) 
-            {} 
-            (keys field-ids))
-          (merge (when-let [art (.getFirstArtwork tag)]
-                   {:artwork (.getMimeType art)}))))))
+  (when-let [tag (get-tag path)] 
+      (->
+        (reduce (fn [m field] 
+                  (let 
+                    [v  (.getFirst tag (field-ids field))]
+                    (if-not (= v "") 
+                      (assoc m field v)
+                      m))) 
+                {} 
+                (keys field-ids))
+        (merge (get-image tag)))))
 
 (defn get-header-info
   "get header info from path"
@@ -121,9 +130,19 @@
          path (get-audio-file path))]
     (if (nil? f) nil (conj (get-header-info f) (get-fields f)))))
 
+
+(defn- set-image-fields
+  [tag {:keys [artwork-data artwork-mime]}]
+  (let [art (if-let [art (.getFirstArtwork tag)] art (Artwork.))]
+    (.setMimeType art artwork-mime)
+    (.setBinaryData art artwork-data)
+    (.setField tag art)))
+
 (defn- set-fields
   "sets all fields in tag to the values in tag-map"
   [tag tag-map]
+  (if (or (:artwork-mime tag-map) (:artwork-data tag-map)) 
+      (set-image-fields tag tag-map))
   (doall (map (fn [[k v]] (.setField tag (field-ids k) v)) 
               (vec (sanitize-tag-map tag tag-map))))
   tag)
@@ -176,12 +195,4 @@
 #_(add-new-tag! "test/resources/tagged/song3-no-art.mp3" {:title "test"})
 #_(merge {:d "d"} nil)
 
-(defn get-image
-  "Returns the first artwork field of file path. Returns as a map with two 
-  entries data (byte array) and mimetype (string). Returns nil if path is bad
-  or if the file doesn't have any artwork."
-  [path]
-  (when-let [tag (get-tag path)]
-    (when-let [art (.getFirstArtwork tag)]
-      {:mimetype (.getMimeType art)
-       :data (.getBinaryData art)})))
+

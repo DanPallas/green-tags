@@ -15,6 +15,29 @@
   [path]
   (IOUtils/toByteArray (input-stream path)))
 
+(def test-files {:tags {:a {:artist "artist" :title "song3"}}
+                  :paths {:1 "test/resources/tagged/unorganized.mp3"
+                          :2 "test/resources/tagged/unorganized2.mp3"
+                          :3 "test/resources/tagged/song3.flac"
+                          :4 "test/resources/tagged/song3.m4a"
+                          :5 "test/resources/tagged/song3.ogg"
+                          :6 "test/resources/tagged/song3.mp3"
+                          :7  "test/resources/tagged/song3-no-art.mp3"}
+                  :images {:1 "test/resources/images/music_icon.png"}})
+
+(defn- clear-scratch
+  []
+  (doall (map delete-file 
+              (vec (.listFiles (as-file "test/resources/scratch"))))))
+(defn- get-scratch-path
+  [path]
+  (str "test/resources/scratch/" 
+       (.getName (as-file (get-in test-files [:paths path])))))
+(defn- copy-to-scratch
+[path]
+  (let [f (as-file (get-in test-files [:paths path]))]
+   (copy f (as-file (get-scratch-path path)))))
+
 (def fields-not-in-aac [:original-artist :remixer :record-label])
 (def fields-dif-in-aac [:genre :encoder])
 (def fields-not-in-vorbis [:original-artist :track-total :record-label 
@@ -43,7 +66,9 @@
                      :encoder "someone"
                      :lyricist "writer"
                      :lyrics "the lyrics"
-                     :artwork "image/png"
+                     :artwork-mime "image/png"
+                     :artwork-data 
+                        (get-byte-array (get-in test-files [:images :1]))
                      }]
              (-> (assoc {} :id3-fields fields)
                  (assoc :id3-header {:bit-rate 128 :channels "Mono"
@@ -87,41 +112,55 @@
                                 :m4a "test/resources/tagged/song3.m4a"
                                 :ogg "test/resources/tagged/song3.ogg"
                                 :flac "test/resources/tagged/song3.flac"}))))
+(defn seq-artwork
+  [tag-map]
+  (if (:artwork-data tag-map)
+   (assoc tag-map :artwork-data (seq (tag-map :artwork-data)))
+   tag-map))
 
 (facts 
   "about get-all-info"
   (fact "it can read information from java files"
-        (core/get-all-info (as-file (get-in song3 [:paths :mp3])))
-           => (conj (song3 :id3-fields) (song3 :id3-header))
-        (core/get-all-info (as-file (get-in song3 [:paths :flac])))
-           => (conj (song3 :flac-fields) (song3 :flac-header))
-        (core/get-all-info (as-file (get-in song3 [:paths :ogg])))
-           => (conj (song3 :ogg-fields) (song3 :ogg-header))
-        (core/get-all-info (as-file (get-in song3 [:paths :m4a])))
-           => (conj (song3 :aac-fields) (song3 :aac-header)))
+        (seq-artwork (core/get-all-info (as-file (get-in song3 [:paths :mp3]))))
+           => (conj (seq-artwork (song3 :id3-fields)) (song3 :id3-header))
+        (seq-artwork (core/get-all-info (as-file (get-in song3 [:paths :flac]))))
+           => (conj (seq-artwork (song3 :flac-fields)) (song3 :flac-header))
+        (seq-artwork (core/get-all-info (as-file (get-in song3 [:paths :ogg]))))
+           => (conj (seq-artwork (song3 :ogg-fields)) (song3 :ogg-header))
+        (seq-artwork (core/get-all-info (as-file (get-in song3 [:paths :m4a]))))
+           => (conj (seq-artwork (song3 :aac-fields)) (song3 :aac-header)))
   (fact "it can read information when passed a path as a string"
-        (core/get-all-info (get-in song3 [:paths :m4a]))
-           => (conj (song3 :aac-fields) (song3 :aac-header)))
+        (seq-artwork (core/get-all-info (get-in song3 [:paths :m4a])))
+           => (conj (seq-artwork (song3 :aac-fields)) (song3 :aac-header)))
   (fact "it returns nil when the file doesn't exist"
         (core/get-all-info "ageaewafa")
-          => nil))
+          => nil)
+  (fact "returns nil for both artwork fields if the file doesn't have artwork"
+          (core/get-all-info (as-file (get-in test-files [:paths :7])))
+          => (dissoc 
+               (merge (song3 :id3-fields) (song3 :id3-header)) 
+               :artwork-mime :artwork-data)))
 (facts
   "about get-fields"
   (fact "it can read information from java files"
-        (core/get-fields (as-file (get-in song3 [:paths :mp3])))
-          => (song3 :id3-fields)
-        (core/get-fields (as-file (get-in song3 [:paths :flac])))
-          => (song3 :flac-fields)
-        (core/get-fields (as-file (get-in song3 [:paths :ogg])))
-          => (song3 :ogg-fields)
-        (core/get-fields (as-file (get-in song3 [:paths :m4a])))
-          => (song3 :aac-fields))
+        (seq-artwork (core/get-fields (as-file (get-in song3 [:paths :mp3]))))
+          => (seq-artwork (song3 :id3-fields))
+        (seq-artwork (core/get-fields (as-file (get-in song3 [:paths :flac]))))
+          => (seq-artwork (song3 :flac-fields))
+        (seq-artwork (core/get-fields (as-file (get-in song3 [:paths :ogg]))))
+          => (seq-artwork (song3 :ogg-fields))
+        (seq-artwork (core/get-fields (as-file (get-in song3 [:paths :m4a]))))
+          => (seq-artwork (song3 :aac-fields)))
   (fact "it can read information when passed a path as a string"
-        (core/get-fields (get-in song3 [:paths :m4a]))
-          => (song3 :aac-fields))
+        (seq-artwork (core/get-fields (get-in song3 [:paths :m4a])))
+          => (seq-artwork (song3 :aac-fields)))
   (fact "it returns nil when the file doesn't exist"
-        (core/get-fields "ageaewafa")
-          => nil))
+        (seq-artwork (core/get-fields "ageaewafa"))
+          => nil)
+  (fact "returns nil for both artwork fields if the file doesn't have artwork"
+          (seq-artwork 
+            (core/get-fields (as-file (get-in test-files [:paths :7]))))
+          => (dissoc (song3 :id3-fields) :artwork-mime :artwork-data)))
 (facts
   "about get-header-info"
   (fact "it can read information from java files"
@@ -139,29 +178,6 @@
   (fact "it returns :no-file when the file doesn't exist"
         (core/get-header-info "ageaewafa")
           => nil))
-
-(def test-files {:tags {:a {:artist "artist" :title "song3"}}
-                  :paths {:1 "test/resources/tagged/unorganized.mp3"
-                          :2 "test/resources/tagged/unorganized2.mp3"
-                          :3 "test/resources/tagged/song3.flac"
-                          :4 "test/resources/tagged/song3.m4a"
-                          :5 "test/resources/tagged/song3.ogg"
-                          :6 "test/resources/tagged/song3.mp3"
-                          :7  "test/resources/tagged/song3-no-art.mp3"}
-                  :images {:1 "test/resources/images/music_icon.png"}})
-
-(defn- clear-scratch
-  []
-  (doall (map delete-file 
-              (vec (.listFiles (as-file "test/resources/scratch"))))))
-(defn- get-scratch-path
-  [path]
-  (str "test/resources/scratch/" 
-       (.getName (as-file (get-in test-files [:paths path])))))
-(defn- copy-to-scratch
-[path]
-  (let [f (as-file (get-in test-files [:paths path]))]
-   (copy f (as-file (get-scratch-path path)))))
 
 (facts 
   "about add-new-tag!"
@@ -182,10 +198,10 @@
             => (get-in test-files [:tags :a]) )
     (fact "it overwrites and copies in ALL fields (mp3)"
           (core/add-new-tag! (get-scratch-path :1)
-                             (dissoc (song3 :id3-fields) :artwork))
+                             (song3 :id3-fields :artwork))
             => true
-          (core/get-fields (get-scratch-path :1))
-            => (dissoc (song3 :id3-fields) :artwork))
+          (seq-artwork (core/get-fields (get-scratch-path :1)))
+            => (seq-artwork (song3 :id3-fields :artwork)))
     (fact "it returns an error string if file doesn't exist"
           (core/add-new-tag! "bad/path" {:title ""})
             => (contains ""))
@@ -201,8 +217,8 @@
           (core/add-new-tag! (get-scratch-path :3)
                              (song3 :flac-fields))
             => true
-          (core/get-fields (get-scratch-path :3))
-            => (dissoc (song3 :flac-fields) :artwork))
+          (seq-artwork (core/get-fields (get-scratch-path :3)))
+            =>  (seq-artwork (song3 :flac-fields)))
     (fact "it overwrites old tag, clearing all fields and returns true (flac)"
           (core/add-new-tag! (get-scratch-path :3)
                              (get-in test-files [:tags :a]))
@@ -221,8 +237,8 @@
           (core/add-new-tag! (get-scratch-path :4)
                              (song3 :aac-fields))
             => true
-          (core/get-fields (get-scratch-path :4))
-            => (dissoc (song3 :aac-fields) :artwork))
+          (seq-artwork (core/get-fields (get-scratch-path :4)))
+            => (seq-artwork (song3 :aac-fields)))
     (fact "it overwrites old tag, clearing all fields and returns true (m4a)"
           (core/add-new-tag! (get-scratch-path :4)
                              (get-in test-files [:tags :a]))
@@ -241,8 +257,8 @@
           (core/add-new-tag! (get-scratch-path :5)
                              (song3 :ogg-fields))
             => true
-          (core/get-fields (get-scratch-path :5))
-            => (dissoc (song3 :ogg-fields) :artwork))
+          (seq-artwork (core/get-fields (get-scratch-path :5)))
+            => (seq-artwork (song3 :ogg-fields)))
     (fact "it overwrites old tag, clearing all fields and returns true (ogg)"
           (core/add-new-tag! (get-scratch-path :5)
                              (get-in test-files [:tags :a]))
@@ -263,33 +279,37 @@
           (core/update-tag! (get-scratch-path :1)
                              {:title "updated-title"})
           => true
-          (core/get-fields (get-scratch-path :1))
-          => (merge (core/get-fields (get-in test-files [:paths :1])) 
-                    {:title "updated-title"}))
+          (seq-artwork (core/get-fields (get-scratch-path :1)))
+          => (seq-artwork 
+               (merge (core/get-fields (get-in test-files [:paths :1])) 
+                      {:title "updated-title"})))
     (fact "it updates multiple values to the existing tag and returns true (mp3)"
           (core/update-tag! (get-scratch-path :1)
                              {:title "updated-title" :artist "updated-artist"})
           => true
-          (core/get-fields (get-scratch-path :1))
-          => (merge (core/get-fields (get-in test-files [:paths :1])) 
-                    {:title "updated-title" :artist "updated-artist"}))
+          (seq-artwork (core/get-fields (get-scratch-path :1)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :1])) 
+                      {:title "updated-title" :artist "updated-artist"})))
     (fact "it ignores unsupported fields and writes supported fields"
           (core/update-tag! (get-scratch-path :1)
                              {:title "updated-title" :artist "updated-artist"
                               :bad-field 1})
           => true
-          (core/get-fields (get-scratch-path :1))
-          => (merge (core/get-fields (get-in test-files [:paths :1])) 
-                    {:title "updated-title" :artist "updated-artist"}))
+          (seq-artwork (core/get-fields (get-scratch-path :1)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :1])) 
+                      {:title "updated-title" :artist "updated-artist"})))
     (fact "it returns an error string if file doesn't exist (mp3)"
           (core/update-tag! "bad/path" {:title ""})
           => (contains ""))
     (fact "it updates the genre tag correctly on mp3 files"
           (core/update-tag! (get-scratch-path :1) {:genre "Rock"})
           => true
-          (core/get-fields (get-scratch-path :1))
-          => (merge (core/get-fields (get-in test-files [:paths :1])) 
-                    {:genre "Rock"})))
+          (seq-artwork (core/get-fields (get-scratch-path :1)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :1])) 
+                      {:genre "Rock"}))))
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :3))]
@@ -297,25 +317,28 @@
           (core/update-tag! (get-scratch-path :3)
                              {:title "updated-title"})
           => true
-          (core/get-fields (get-scratch-path :3))
-          => (merge (core/get-fields (get-in test-files [:paths :3])) 
-                    {:title "updated-title"}))
+          (seq-artwork (core/get-fields (get-scratch-path :3)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :3])) 
+                      {:title "updated-title"})))
     (fact "it updates multiple values to the existing tag and returns true (flac)"
           (core/update-tag! (get-scratch-path :3)
                              {:title "updated-title" :artist "updated-artist"})
           => true
-          (core/get-fields (get-scratch-path :3))
-          => (merge (core/get-fields (get-in test-files [:paths :3])) 
-                    {:title "updated-title" :artist "updated-artist"}))
+          (seq-artwork (core/get-fields (get-scratch-path :3)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :3])) 
+                      {:title "updated-title" :artist "updated-artist"})))
     (fact "it returns an error string if file doesn't exist (flac)"
           (core/update-tag! "bad/path" {:title ""})
           => (contains ""))
     (fact "it updates the genre tag correctly on mp3 files"
           (core/update-tag! (get-scratch-path :3) {:genre "Rock"})
           => true
-          (core/get-fields (get-scratch-path :3))
-          => (merge (core/get-fields (get-in test-files [:paths :3])) 
-                    {:genre "Rock"})))
+          (seq-artwork (core/get-fields (get-scratch-path :3)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :3])) 
+                      {:genre "Rock"}))))
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :4))]
@@ -323,25 +346,28 @@
           (core/update-tag! (get-scratch-path :4)
                              {:title "updated-title"})
           => true
-          (core/get-fields (get-scratch-path :4))
-          => (merge (core/get-fields (get-in test-files [:paths :4])) 
-                    {:title "updated-title"}))
+          (seq-artwork (core/get-fields (get-scratch-path :4)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :4])) 
+                      {:title "updated-title"})))
     (fact "it updates multiple values to the existing tag and returns true (m4a)"
           (core/update-tag! (get-scratch-path :4)
                              {:title "updated-title" :artist "updated-artist"})
           => true
-          (core/get-fields (get-scratch-path :4))
-          => (merge (core/get-fields (get-in test-files [:paths :4])) 
-                    {:title "updated-title" :artist "updated-artist"}))
+          (seq-artwork (core/get-fields (get-scratch-path :4)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :4])) 
+                      {:title "updated-title" :artist "updated-artist"})))
     (fact "it returns an error string if file doesn't exist (m4a)"
           (core/update-tag! "bad/path" {:title ""})
           => (contains ""))
     (fact "it updates the genre tag correctly on mp3 files"
           (core/update-tag! (get-scratch-path :4) {:genre "Rock"})
           => true
-          (core/get-fields (get-scratch-path :4))
-          => (merge (core/get-fields (get-in test-files [:paths :4])) 
-                    {:genre "Rock"})))
+          (seq-artwork (core/get-fields (get-scratch-path :4)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :4])) 
+                      {:genre "Rock"}))))
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :5))]
@@ -349,93 +375,25 @@
           (core/update-tag! (get-scratch-path :5)
                             {:title "updated-title"})
           => true
-          (core/get-fields (get-scratch-path :5))
-          => (merge (core/get-fields (get-in test-files [:paths :5])) 
-                    {:title "updated-title"}))
+          (seq-artwork (core/get-fields (get-scratch-path :5)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :5])) 
+                      {:title "updated-title"})))
     (fact "it updates multiple values to the existing tag and returns true (ogg)"
           (core/update-tag! (get-scratch-path :5)
                             {:title "updated-title" :artist "updated-artist"})
           => true
-          (core/get-fields (get-scratch-path :5))
-          => (merge (core/get-fields (get-in test-files [:paths :5])) 
-                    {:title "updated-title" :artist "updated-artist"}))
+          (seq-artwork (core/get-fields (get-scratch-path :5)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :5])) 
+                      {:title "updated-title" :artist "updated-artist"})))
     (fact "it returns an error string if file doesn't exist (ogg)"
           (core/update-tag! "bad/path" {:title ""})
           => (contains ""))
     (fact "it updates the genre tag correctly on mp3 files"
           (core/update-tag! (get-scratch-path :5) {:genre "Rock"})
           => true
-          (core/get-fields (get-scratch-path :5))
-          => (merge (core/get-fields (get-in test-files [:paths :5])) 
-                    {:genre "Rock"}))))
-(facts
-  "about get-image"
-  (against-background 
-    [(after :facts (clear-scratch))
-     (before :facts (copy-to-scratch :6))]
-    (fact "it reads an image into a map containing correct mimetype and
-         a byte array (mp3)"
-          (let [m (core/get-image (get-scratch-path :6))]
-            (do 
-              (type m) => (type {})
-              (:mimetype m) 
-              => "image/png"
-              (seq (:data m))
-              =>(seq (get-byte-array (get-in test-files [:images :1])))))))
-  (against-background 
-    [(after :facts (clear-scratch))
-     (before :facts (copy-to-scratch :5))]
-    (fact "it reads an image into a map containing correct mimetype and
-         a byte array (ogg)"
-          (let [m (core/get-image (get-scratch-path :5))]
-            (do 
-              (type m) => (type {})
-              (:mimetype m) 
-              => "image/png"
-              (seq (:data m))
-              =>(seq (get-byte-array (get-in test-files [:images :1])))))))
-  (against-background 
-    [(after :facts (clear-scratch))
-     (before :facts (copy-to-scratch :4))]
-    (fact "it reads an image into a map containing correct mimetype and
-         a byte array (m4a)"
-          (let [m (core/get-image (get-scratch-path :4))]
-            (do 
-              (type m) => (type {})
-              (:mimetype m) 
-              => "image/png"
-              (seq (:data m))
-              =>(seq (get-byte-array (get-in test-files [:images :1])))))))
-  (against-background 
-    [(after :facts (clear-scratch))
-     (before :facts (copy-to-scratch :3))]
-    (fact "it reads an image into a map containing correct mimetype and
-         a byte array (flac)"
-          (let [m (core/get-image (get-scratch-path :3))]
-            (do 
-              (type m) => (type {})
-              (:mimetype m) 
-              => "image/png"
-              (seq (:data m))
-              =>(seq (get-byte-array (get-in test-files [:images :1])))))))
-  (against-background 
-    [(after :facts (clear-scratch))
-     (before :facts (copy-to-scratch :3))]
-    (fact "it reads an image into a map containing correct mimetype and
-         a byte array when given a java file (flac)"
-          (let [m (core/get-image (as-file (get-scratch-path :3)))]
-            (do 
-              (type m) => (type {})
-              (:mimetype m) 
-              => "image/png"
-              (seq (:data m))
-              =>(seq (get-byte-array (get-in test-files [:images :1])))))))
-  (against-background 
-    [(after :facts (clear-scratch))
-     (before :facts (copy-to-scratch :7))]
-    (fact "returns nil if the file doesn't have artwork"
-          (core/get-image (as-file (get-scratch-path :7)))
-          => nil))
-  (fact "it returns nil when the file doesn't exist"
-        (core/get-image "bad path")
-        => nil))
+          (seq-artwork (core/get-fields (get-scratch-path :5)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :5])) 
+                      {:genre "Rock"})))))
