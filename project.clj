@@ -1,4 +1,4 @@
-(defproject green-tags "0.3.0-alpha"
+(defproject green-tags/green-tags "0.3.0-alpha"
   :description "An audio tagging library supporing mp3, mp4, flac, and ogg containers. It supports all of the common tags used in these files including one image in a simple abstracted way which hides most of the differences between the formats. 
 
 ex. To get read all supported tags and image into a map use (get-all-info <path>) and a map will be returned with all tag data.
@@ -27,4 +27,12 @@ contributing: Pull requests are welcome, but try to keep the API simple and subm
                  [org/jaudiotagger "2.0.3"]]
   :profiles {:dev {:dependencies [[midje "1.6.3"]
                                   [commons-io/commons-io "2.4"]]}}
-  :plugins [[codox "0.8.10"]])
+  :plugins [[codox "0.8.10"]]
+  :scm {:name "git"
+        :url "https://github.com/DanPallas/green-tags"}
+  :signing {:gpg-key "6EFA1EC0"}
+  :deploy-repositories [["clojars" {:creds :gpg}]]
+  :pom-addition [:developers [:developer
+                              [:name "Dan Pallas"]
+                              [:url "https://github.com/DanPallas"]
+                              [:email "git@danpallas.com"]]])
