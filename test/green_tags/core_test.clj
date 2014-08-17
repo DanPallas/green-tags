@@ -23,7 +23,8 @@
                           :5 "test/resources/tagged/song3.ogg"
                           :6 "test/resources/tagged/song3.mp3"
                           :7  "test/resources/tagged/song3-no-art.mp3"}
-                  :images {:1 "test/resources/images/music_icon.png"}})
+                  :images {:1 "test/resources/images/music_icon.png"
+                           :2 "test/resources/images/vinyl.png"}})
 
 (defn- clear-scratch
   []
@@ -198,7 +199,7 @@
             => (get-in test-files [:tags :a]) )
     (fact "it overwrites and copies in ALL fields (mp3)"
           (core/add-new-tag! (get-scratch-path :1)
-                             (song3 :id3-fields :artwork))
+                             (song3 :id3-fields))
             => true
           (seq-artwork (core/get-fields (get-scratch-path :1)))
             => (seq-artwork (song3 :id3-fields :artwork)))
@@ -209,7 +210,16 @@
           (core/add-new-tag! (get-scratch-path :1) {:genre "Rock"})
             => true
           (core/get-fields (get-scratch-path :1))
-            => {:genre "Rock"}))
+            => {:genre "Rock"})
+    (fact "it can add artwork from a file mp3"
+          (core/add-new-tag! (get-scratch-path :1) 
+                             {:artwork-file (get-in test-files [:images :2])})
+            => true
+          (seq-artwork (core/get-fields (get-scratch-path :1)))
+            => (seq-artwork 
+                 {:artwork-mime "image/png"
+                  :artwork-data 
+                    (get-byte-array (get-in test-files [:images :2]))})))
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :3))]
@@ -229,7 +239,16 @@
           (core/add-new-tag! (get-scratch-path :3) {:genre "Rock"})
             => true
           (core/get-fields (get-scratch-path :3))
-            => {:genre "Rock"}))
+            => {:genre "Rock"})
+    (fact "it can add artwork from a file (flac)"
+          (core/add-new-tag! (get-scratch-path :3) 
+                             {:artwork-file (get-in test-files [:images :2])})
+            => true
+          (seq-artwork (core/get-fields (get-scratch-path :3)))
+            => (seq-artwork 
+                 {:artwork-mime "image/png"
+                  :artwork-data 
+                    (get-byte-array (get-in test-files [:images :2]))})))
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :4))]
@@ -249,7 +268,16 @@
           (core/add-new-tag! (get-scratch-path :4) {:genre "Rock"})
             => true
           (core/get-fields (get-scratch-path :4))
-            => {:genre "Rock"}))
+            => {:genre "Rock"})
+    (fact "it can add artwork from a file (m4a)"
+          (core/add-new-tag! (get-scratch-path :4) 
+                             {:artwork-file (get-in test-files [:images :2])})
+            => true
+          (seq-artwork (core/get-fields (get-scratch-path :4)))
+            => (seq-artwork 
+                 {:artwork-mime "image/png"
+                  :artwork-data 
+                    (get-byte-array (get-in test-files [:images :2]))})))
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :5))]
@@ -269,7 +297,16 @@
           (core/add-new-tag! (get-scratch-path :5) {:genre "Rock"})
             => true
           (core/get-fields (get-scratch-path :5))
-            => {:genre "Rock"})))
+            => {:genre "Rock"})
+    (fact "it can add artwork from a file (ogg)"
+          (core/add-new-tag! (get-scratch-path :5) 
+                             {:artwork-file (get-in test-files [:images :2])})
+            => true
+          (seq-artwork (core/get-fields (get-scratch-path :5)))
+            => (seq-artwork 
+                 {:artwork-mime "image/png"
+                  :artwork-data 
+                    (get-byte-array (get-in test-files [:images :2]))}))))
 (facts 
   "about update-tag!"
   (against-background 
@@ -318,7 +355,17 @@
           (seq-artwork (core/get-fields (get-scratch-path :1)))
           => (seq-artwork
                (-> (core/get-fields (get-in test-files [:paths :1])) 
-                   (dissoc :genre :artist :artwork-mime :artwork-data)))))
+                   (dissoc :genre :artist :artwork-mime :artwork-data))))
+    (fact "it can add artwork from a file mp3"
+          (core/update-tag! (get-scratch-path :1) 
+                            {:artwork-file (get-in test-files [:images :2])})
+          => true
+          (seq-artwork (core/get-fields (get-scratch-path :1)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :1])) 
+                      {:artwork-mime "image/png"
+                       :artwork-data 
+                       (get-byte-array (get-in test-files [:images :2]))}))))
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :3))]
@@ -356,7 +403,17 @@
           (seq-artwork (core/get-fields (get-scratch-path :3)))
           => (seq-artwork
                (-> (core/get-fields (get-in test-files [:paths :3])) 
-                   (dissoc :genre :artist :artwork-mime :artwork-data)))))
+                   (dissoc :genre :artist :artwork-mime :artwork-data))))
+    (fact "it can add artwork from a file flac"
+          (core/update-tag! (get-scratch-path :3) 
+                            {:artwork-file (get-in test-files [:images :2])})
+          => true
+          (seq-artwork (core/get-fields (get-scratch-path :3)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :3])) 
+                      {:artwork-mime "image/png"
+                       :artwork-data 
+                       (get-byte-array (get-in test-files [:images :2]))}))))
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :4))]
@@ -394,7 +451,17 @@
           (seq-artwork (core/get-fields (get-scratch-path :4)))
           => (seq-artwork
                (-> (core/get-fields (get-in test-files [:paths :4])) 
-                   (dissoc :genre :artist :artwork-mime :artwork-data)))))
+                   (dissoc :genre :artist :artwork-mime :artwork-data))))
+    (fact "it can add artwork from a file (m4a)"
+          (core/update-tag! (get-scratch-path :4) 
+                            {:artwork-file (get-in test-files [:images :2])})
+          => true
+          (seq-artwork (core/get-fields (get-scratch-path :4)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :4])) 
+                      {:artwork-mime "image/png"
+                       :artwork-data 
+                       (get-byte-array (get-in test-files [:images :2]))}))))
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :5))]
@@ -432,4 +499,14 @@
           (seq-artwork (core/get-fields (get-scratch-path :5)))
           => (seq-artwork
                (-> (core/get-fields (get-in test-files [:paths :5])) 
-                   (dissoc :genre :artist :artwork-mime :artwork-data))))))
+                   (dissoc :genre :artist :artwork-mime :artwork-data))))
+    (fact "it can add artwork from a file (ogg)"
+          (core/update-tag! (get-scratch-path :5) 
+                            {:artwork-file (get-in test-files [:images :2])})
+          => true
+          (seq-artwork (core/get-fields (get-scratch-path :5)))
+          => (seq-artwork
+               (merge (core/get-fields (get-in test-files [:paths :5])) 
+                      {:artwork-mime "image/png"
+                       :artwork-data 
+                       (get-byte-array (get-in test-files [:images :2]))})))))

@@ -1,12 +1,4 @@
 (ns green-tags.core
-  "Supported tags: 
-    mp3: track, track-total, disc-no, disc-total, title,
-      artist, album, album-artist, year, genre, comment, composer, 
-      original-artist, remixer, conductor, bpm, grouping, isrc, record-label, 
-      encoder, lyricist, lyrics
-    aac: all from mp3 except original-artist, remixer, record-label
-    ogg/flac: all except original-artist, track-total, record-label, disc-total,
-      remixer, grouping"
   (:require [clojure.java.io :refer [as-file]]
             [clojure.string :as string]
             [clojure.set :refer [difference]])
@@ -87,9 +79,6 @@
       {:artwork-mime (.getMimeType art)
        :artwork-data (.getBinaryData art)}))
 
-(defn- get-tag-fields
-  [tag]
-  )
 (defn get-fields
   "returns a tag-map from audio file tag fields"
   [path] 
@@ -132,13 +121,16 @@
 
 
 (defn- set-image-fields
-  [tag {:keys [artwork-data artwork-mime]}]
+  [tag {:keys [artwork-data artwork-mime artwork-file]}]
   (if (or (= artwork-data :delete) (= artwork-mime :delete))
       (.deleteArtworkField tag)
    (let [art (if-let [art (.getFirstArtwork tag)] art (Artwork.))]
-    (.setMimeType art artwork-mime)
-    (.setBinaryData art artwork-data)
-    (.setField tag art))))
+    (if artwork-file
+      (.setFromFile art (as-file artwork-file))
+      (do
+        (.setMimeType art artwork-mime)
+        (.setBinaryData art artwork-data)))
+        (.setField tag art))))
 
 (defn- set-field
   [tag [k v]]
@@ -149,7 +141,9 @@
 (defn- set-fields
   "sets all fields in tag to the values in tag-map"
   [tag tag-map]
-  (if (or (:artwork-mime tag-map) (:artwork-data tag-map)) 
+  (if (or (:artwork-mime tag-map) 
+          (:artwork-data tag-map)
+          (:artwork-file tag-map)) 
       (set-image-fields tag tag-map))
   (doall (map (partial set-field tag) 
               (vec (sanitize-tag-map tag tag-map))))
@@ -171,7 +165,9 @@
 (defn add-new-tag!
   "Takes a path (file/string), removes the old tag from the file and writes a 
   new tag with the values from the map. Returns true on success, otherwise
-  returns an error string. It ignores unsupported fields in the tag-map."
+  returns an error string. It ignores unsupported fields in the tag-map. 
+  Additonally, it accepts the field :artwork-file which is the path of an 
+  image file to be loaded into the artwork-mime and artwork-data fields."
   [path tag-map]
   (let [f (get-audio-file path)]
     (try 
@@ -188,7 +184,8 @@
   "Takes a path (file/string), and a tag-map. Updates/adds fields from tag-map 
   to the existing tag on the file. It ignores unsupported fields in the 
   tag-map. If :deleted is passed as a value, then the field is deleted from the 
-  tag."
+  tag. Additonally, it accepts the field :artwork-file which is the path of an 
+  image file to be loaded into the artwork-mime and artwork-data fields."
   [path tag-map]
   (let [f (get-audio-file path)]
     (try 
