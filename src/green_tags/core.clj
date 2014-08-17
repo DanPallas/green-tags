@@ -133,17 +133,25 @@
 
 (defn- set-image-fields
   [tag {:keys [artwork-data artwork-mime]}]
-  (let [art (if-let [art (.getFirstArtwork tag)] art (Artwork.))]
+  (if (or (= artwork-data :delete) (= artwork-mime :delete))
+      (.deleteArtworkField tag)
+   (let [art (if-let [art (.getFirstArtwork tag)] art (Artwork.))]
     (.setMimeType art artwork-mime)
     (.setBinaryData art artwork-data)
-    (.setField tag art)))
+    (.setField tag art))))
+
+(defn- set-field
+  [tag [k v]]
+  (if (= v :delete)
+    (.deleteField tag (field-ids k))
+    (.setField tag (field-ids k) v)))
 
 (defn- set-fields
   "sets all fields in tag to the values in tag-map"
   [tag tag-map]
   (if (or (:artwork-mime tag-map) (:artwork-data tag-map)) 
       (set-image-fields tag tag-map))
-  (doall (map (fn [[k v]] (.setField tag (field-ids k) v)) 
+  (doall (map (partial set-field tag) 
               (vec (sanitize-tag-map tag tag-map))))
   tag)
 
@@ -177,9 +185,10 @@
         (.toString e))))) 
 
 (defn update-tag!
-  "Takes a path (file/string), and a tag-map. Updates/adds fields from tag-map
+  "Takes a path (file/string), and a tag-map. Updates/adds fields from tag-map 
   to the existing tag on the file. It ignores unsupported fields in the 
-  tag-map."
+  tag-map. If :deleted is passed as a value, then the field is deleted from the 
+  tag."
   [path tag-map]
   (let [f (get-audio-file path)]
     (try 
@@ -190,9 +199,3 @@
         true)
       (catch Exception e
         (.toString e)))))
-
-#_(.getMimeType (.getFirstArtwork (get-tag (get-audio-file "test/resources/tagged/song3-no-art.mp3"))))
-#_(add-new-tag! "test/resources/tagged/song3-no-art.mp3" {:title "test"})
-#_(merge {:d "d"} nil)
-
-

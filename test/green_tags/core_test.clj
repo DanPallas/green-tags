@@ -309,7 +309,16 @@
           (seq-artwork (core/get-fields (get-scratch-path :1)))
           => (seq-artwork
                (merge (core/get-fields (get-in test-files [:paths :1])) 
-                      {:genre "Rock"}))))
+                      {:genre "Rock"})))
+    (fact "it deletes fields when passed :delete as the value (mp3)"
+          (core/update-tag! (get-scratch-path :1) {:genre :delete,
+                                                   :artist :delete,
+                                                   :artwork-mime :delete})
+          => true
+          (seq-artwork (core/get-fields (get-scratch-path :1)))
+          => (seq-artwork
+               (-> (core/get-fields (get-in test-files [:paths :1])) 
+                   (dissoc :genre :artist :artwork-mime :artwork-data)))))
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :3))]
@@ -332,13 +341,22 @@
     (fact "it returns an error string if file doesn't exist (flac)"
           (core/update-tag! "bad/path" {:title ""})
           => (contains ""))
-    (fact "it updates the genre tag correctly on mp3 files"
+    (fact "it updates the genre tag correctly on flac files"
           (core/update-tag! (get-scratch-path :3) {:genre "Rock"})
           => true
           (seq-artwork (core/get-fields (get-scratch-path :3)))
           => (seq-artwork
                (merge (core/get-fields (get-in test-files [:paths :3])) 
-                      {:genre "Rock"}))))
+                      {:genre "Rock"})))
+    (fact "it deletes fields when passed :delete as the value (flac)"
+          (core/update-tag! (get-scratch-path :3) {:genre :delete,
+                                                   :artist :delete,
+                                                   :artwork-mime :delete})
+          => true
+          (seq-artwork (core/get-fields (get-scratch-path :3)))
+          => (seq-artwork
+               (-> (core/get-fields (get-in test-files [:paths :3])) 
+                   (dissoc :genre :artist :artwork-mime :artwork-data)))))
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :4))]
@@ -361,13 +379,22 @@
     (fact "it returns an error string if file doesn't exist (m4a)"
           (core/update-tag! "bad/path" {:title ""})
           => (contains ""))
-    (fact "it updates the genre tag correctly on mp3 files"
+    (fact "it updates the genre tag correctly on m4a files"
           (core/update-tag! (get-scratch-path :4) {:genre "Rock"})
           => true
           (seq-artwork (core/get-fields (get-scratch-path :4)))
           => (seq-artwork
                (merge (core/get-fields (get-in test-files [:paths :4])) 
-                      {:genre "Rock"}))))
+                      {:genre "Rock"})))
+    (fact "it deletes fields when passed :delete as the value (m4a)"
+          (core/update-tag! (get-scratch-path :4) {:genre :delete,
+                                                   :artist :delete,
+                                                   :artwork-mime :delete})
+          => true
+          (seq-artwork (core/get-fields (get-scratch-path :4)))
+          => (seq-artwork
+               (-> (core/get-fields (get-in test-files [:paths :4])) 
+                   (dissoc :genre :artist :artwork-mime :artwork-data)))))
   (against-background 
     [(after :facts (clear-scratch))
      (before :facts (copy-to-scratch :5))]
@@ -396,4 +423,13 @@
           (seq-artwork (core/get-fields (get-scratch-path :5)))
           => (seq-artwork
                (merge (core/get-fields (get-in test-files [:paths :5])) 
-                      {:genre "Rock"})))))
+                      {:genre "Rock"})))
+    (fact "it deletes fields when passed :delete as the value (ogg)"
+          (core/update-tag! (get-scratch-path :5) {:genre :delete,
+                                                   :artist :delete,
+                                                   :artwork-mime :delete})
+          => true
+          (seq-artwork (core/get-fields (get-scratch-path :5)))
+          => (seq-artwork
+               (-> (core/get-fields (get-in test-files [:paths :5])) 
+                   (dissoc :genre :artist :artwork-mime :artwork-data))))))
