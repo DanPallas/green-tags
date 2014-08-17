@@ -9,3 +9,4 @@ pom.xml.asc
 /.nrepl-port
 test/resources/scratch/*
 doc/*
+*/.DS_Store
