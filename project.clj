@@ -1,5 +1,5 @@
 (defproject green-tags/green-tags "0.3.0-alpha"
-  :description "An audio tagging library supporing mp3, mp4, flac, and ogg containers. It supports all of the common tags used in these files including one image in a simple abstracted way which hides most of the differences between the formats. 
+  :description "green-tags is an audio tagging library supporing mp3, mp4, flac, and ogg containers. It supports all of the common fields used in these files including one image in a simple abstracted way which hides most of the differences between the formats. 
 
 ex. To get read all supported tags and image into a map use (get-all-info <path>) and a map will be returned with all tag data.
 
