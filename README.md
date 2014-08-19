@@ -22,9 +22,9 @@ Supported tags:
 ex. To get read all supported tags and image into a map: (get-all-info <path>) a map will be returned with all tag data.
 
 ex. To update an existing tag with a new artist and album while leaving all other fields untouched, use 
-(update-tag! <file> {:artist "new artist", :album "new album"})
+(update-tag! \<file\> {:artist "new artist", :album "new album"})
 
-ex. To delete the lyrics field, use (update-tag! <file> {:lyrics :delete})
+ex. To delete the lyrics field, use (update-tag! \<file\> {:lyrics :delete})
 
 
 #Contributing
