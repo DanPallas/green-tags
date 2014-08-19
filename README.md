@@ -1,7 +1,7 @@
 green-tags
 ==========
 
-[green-tags "0.3.0-alpha"]
+[![Clojars Project](http://clojars.org/green-tags/latest-version.svg)](http://clojars.org/green-tags)
 
 green-tags is an audio tagging library supporing mp3, mp4, flac, and ogg containers. It supports all of the common fields used in these files including one image in a simple abstracted way which hides most of the differences between the formats. 
 #Examples
