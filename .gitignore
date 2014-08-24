@@ -10,3 +10,4 @@ pom.xml.asc
 test/resources/scratch/*
 doc/*
 */.DS_Store
+.DS_Store
